@@ -7,9 +7,10 @@ pub trait Hitable {
     fn hit(&self, r: &Ray) -> Option<f32>;
 }
 
-struct Sphere {
-    center: Point,
-    radius: f32,
+#[derive(Copy, Clone)]
+pub struct Sphere {
+   pub center: Point,
+   pub radius: f32,
 }
 
 impl Hitable for Sphere {
@@ -20,18 +21,17 @@ impl Hitable for Sphere {
         let discriminant = b * b - 4.0 * a * c;
 
         if discriminant > 0.0 {
-            let discSqrt = discriminant.sqrt();
-            let t = (-b + discSqrt) * 0.5 / a;
+            let disc_sqrt = discriminant.sqrt();
+            let t = (-b + disc_sqrt) * 0.5 / a;
             if t > EPS {
                 return Some(t);
             }
 
-            let t = (-b - discSqrt) * 0.5 / a;
+            let t = (-b - disc_sqrt) * 0.5 / a;
             if t > EPS {
                 return Some(t);
             }
         }
-
         None
     }
 }
