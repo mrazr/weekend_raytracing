@@ -6,6 +6,7 @@ use std::cell::RefCell;
 pub trait Sampler {
     fn sample(&self, pixel_size: f32, pixel_center: (f32, f32)) -> Vec<(f32, f32)>; 
     fn num_samples(&self) -> u8;
+    fn set_num_samples(&mut self, num: u8); 
 }
 
 pub struct SimpleSampler;
@@ -17,6 +18,10 @@ impl Sampler for SimpleSampler {
 
     fn num_samples(&self) -> u8 {
         1
+    }
+
+    fn set_num_samples(&mut self, num: u8) {
+        ()
     }
 }
 
@@ -43,6 +48,10 @@ impl Sampler for RegularSampler {
 
     fn num_samples(&self) -> u8 {
         self.sampler_window_size * self.sampler_window_size
+    }
+
+    fn set_num_samples(&mut self, num: u8) {
+        self.sampler_window_size = (num as f32).sqrt() as u8;
     }
 }
 
@@ -82,6 +91,10 @@ impl Sampler for JitterSampler {
     fn num_samples(&self) -> u8 {
         self.sampler_window_size * self.sampler_window_size
     }
+
+    fn set_num_samples(&mut self, num: u8) {
+        self.sampler_window_size = (num as f32).sqrt() as u8;
+    }
 }
 
 pub struct RandomSampler {
@@ -108,5 +121,9 @@ impl Sampler for RandomSampler {
 
     fn num_samples(&self) -> u8 {
         self.sampler_window_size * self.sampler_window_size
+    }
+
+    fn set_num_samples(&mut self, num: u8) {
+        self.sampler_window_size = (num as f32).sqrt() as u8;
     }
 }
