@@ -3,9 +3,11 @@ mod hitable;
 mod world;
 mod tracer;
 mod material;
+mod sampler;
 use minifb::Window;
 use crate::world::World;
-use crate::tracer::{ Tracer, Caster, Sampler, SimpleSampler, MultiSampler };
+use crate::tracer::{ Tracer, Caster };
+use crate::sampler::{ Sampler, SimpleSampler, RegularSampler, JitterSampler, RandomSampler };
 
 fn main() {
     // let n = 255 | ((255.0 * 0.5) as u32) << 24 | ((255.0 * 0.25) as u32) << 16 | ((255.0 * 0.125) as u32) << 8;
@@ -16,7 +18,8 @@ fn main() {
     let mut buffer: Vec<u32> = Vec::with_capacity((hr * vr) as usize);
     (0..(hr * vr)).into_iter().for_each(|_| buffer.push(0u32));
     {
-        let sampler = MultiSampler { sampler_window_size: 5 };
+        // let sampler = RegularSampler { sampler_window_size: 4 };
+        let sampler = RandomSampler::new(4);
         let tracer = Tracer::Caster(Caster { world: &world, sampler: sampler });
         tracer.trace(&mut buffer);
     }

@@ -9,3 +9,7 @@ edition = "2018"
 [dependencies]
 minifb = ""
 cgmath = ""
+
+[dependencies.rand]
+version = "0.7.0"
+features = ["small_rng"]
