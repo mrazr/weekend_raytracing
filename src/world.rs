@@ -42,4 +42,18 @@ impl World {
     pub fn move_in_z(&mut self, step: f32) {
         self.view_plane.z += step;
     }
+
+    pub fn change_pixel_size(&mut self, step: f32) {
+        self.view_plane.pixel_size += step;
+        println!("pix size is now {}", self.view_plane.pixel_size);
+    }
+
+    pub fn change_resolution(&mut self, factor: f32) {
+        self.view_plane.vres = (self.view_plane.vres as f32 * factor) as u32;
+        self.view_plane.hres = (self.view_plane.hres as f32 * factor) as u32;
+    }
+
+    pub fn get_resolution(&self) -> (u32, u32) {
+        (self.view_plane.hres, self.view_plane.vres)
+    }
 }

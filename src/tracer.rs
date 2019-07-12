@@ -3,11 +3,13 @@ use crate::world::{ World, ViewPlane };
 use crate::ray::*;
 use cgmath::Zero;
 
-pub enum Tracer<'a> {
-    Caster(Caster<'a>)
+pub enum Tracer<'a, T>
+    where T: Sampler {
+    Caster(Caster<'a, T>)
 }
 
-impl<'a> Tracer<'a> {
+impl<'a, T> Tracer<'a, T> 
+    where T: Sampler {
     pub fn trace(&self, buff: &mut [u32]) {
         match self {
             Tracer::Caster(caster) => caster.trace(buff),
@@ -15,11 +17,14 @@ impl<'a> Tracer<'a> {
     } 
 }
 
-pub struct Caster<'a> {
+pub struct Caster<'a, T> 
+    where T: Sampler {
     pub world: &'a World,
+    pub sampler: T,
 }
 
-impl<'a> Caster<'a> {
+impl<'a, T> Caster<'a, T> 
+    where T: Sampler {
     fn trace(&self, buff: &mut [u32]) {
         let (vp, s, hr, vr, z) = {
             let world = self.world;
@@ -29,14 +34,16 @@ impl<'a> Caster<'a> {
         
         for j in 0..vr {
             for i in 0..hr {
-                // let x = s * (i as f32 - 0.5 * hr as f32 + 0.5);
-                // let y = s * (j as f32 - 0.5 * hr as f32 + 0.5);
                 let x = s * (i as f32 - 0.5 * (hr as f32 - 1.0));
                 let y = s * (j as f32 - 0.5 * (vr as f32  - 1.0));
-                let ray = Ray::new(Point::new(x, y, z), 
-                    Vec3::new(0.0, 0.0, -1.0));
-                let color = color_to_u32(&self.cast_ray(&ray));
-                buff[j * hr + i] = color;
+                let mut color = Vec3::zero();
+                for coord in self.sampler.sample(self.world.view_plane.pixel_size, (x, y)).into_iter() {
+                    let ray = Ray::new(Point::new(coord.0, coord.1, z), 
+                        Vec3::new(0.0, 0.0, -1.0));
+                    color += self.cast_ray(&ray);
+                }
+                color /= self.sampler.num_samples() as f32;
+                buff[j * hr + i] = color_to_u32(&color);
             }
         }
     }
@@ -61,4 +68,48 @@ impl<'a> Caster<'a> {
 
 fn color_to_u32(c: &Vec3) -> u32 {
     (((255.0 * c.z) as u32) << 0) | (((255.0 * c.y) as u32) << 8) | (((255.0 * c.x) as u32) << 16)
+}
+
+
+pub trait Sampler {
+    fn sample(&self, pixel_size: f32, pixel_center: (f32, f32)) -> Vec<(f32, f32)>; 
+    fn num_samples(&self) -> u8;
+}
+
+pub struct SimpleSampler;
+
+impl Sampler for SimpleSampler {
+    fn sample(&self, _pixel_size: f32, pixel_center: (f32, f32)) -> Vec<(f32, f32)> {
+        vec![pixel_center]
+    }
+
+    fn num_samples(&self) -> u8 {
+        1
+    }
+}
+
+pub struct MultiSampler {
+    pub sampler_window_size: u8,
+}
+
+impl Sampler for MultiSampler {
+    fn sample(&self, pixel_size: f32, pixel_center: (f32, f32)) -> Vec<(f32, f32)> {
+        let mut sample_coords = Vec::<(f32, f32)>::with_capacity((self.sampler_window_size * self.sampler_window_size) as usize);
+        let step = pixel_size / self.sampler_window_size as f32;
+        for i in 0..self.sampler_window_size {
+            for j in 0..self.sampler_window_size {
+                sample_coords.push(
+                    (
+                        pixel_center.0 - pixel_size * 0.5 + (j as f32 + 0.5) * step,
+                        pixel_center.1 - pixel_size * 0.5 + (i as f32 + 0.5) * step
+                    )
+                );
+            }
+        }
+        sample_coords
+    }
+
+    fn num_samples(&self) -> u8 {
+        self.sampler_window_size * self.sampler_window_size
+    }
 }
